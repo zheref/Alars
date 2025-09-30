@@ -130,7 +130,7 @@ class XcodeService: XcodeServiceProtocol {
         let verboseFlag = verbose ? "" : "-quiet"
         // Removed -sdk iphonesimulator to let xcodebuild use the scheme's default destination
         // This matches Xcode's behavior and supports multi-platform schemes
-        let buildCommand = "xcodebuild \(projectArg) -scheme '\(scheme)' build \(verboseFlag)"
+        let buildCommand = "xcodebuild \(projectArg) -scheme '\(scheme)' -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' clean build \(verboseFlag) COMPILER_INDEX_STORE_ENABLE=NO"
 
         return try shellOut(to: buildCommand, at: path)
     }

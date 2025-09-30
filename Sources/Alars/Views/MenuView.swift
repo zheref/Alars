@@ -1,6 +1,7 @@
 import Foundation
 import Rainbow
 
+/// Protocol defining menu display and interaction interface
 protocol MenuViewProtocol {
     func showMainMenu()
     func showProjectMenu(for project: Project) -> MenuOption?
@@ -8,20 +9,27 @@ protocol MenuViewProtocol {
     func selectOperation() -> OperationType?
 }
 
+/// Represents user's menu selection
 enum MenuOption {
-    case operation(OperationType)
-    case customCommand(String)
-    case back
-    case exit
+    case operation(OperationType)  // User selected a standard operation
+    case customCommand(String)     // User selected a custom command by alias
+    case back                      // User wants to go back to project selection
+    case exit                      // User wants to exit the application
 }
 
+/// Menu view implementation providing interactive project and operation selection
 class MenuView: MenuViewProtocol {
+    /// Console view dependency for user interaction
     private let consoleView: ConsoleViewProtocol
 
+    /// Initializes the menu view with console dependency
+    /// - Parameter consoleView: Console view for user interaction
     init(consoleView: ConsoleViewProtocol = ConsoleView()) {
         self.consoleView = consoleView
     }
 
+    /// Displays the main application header
+    /// Clears screen and shows the Alars CLI banner
     func showMainMenu() {
         consoleView.clear()
         let header = """
@@ -35,12 +43,17 @@ class MenuView: MenuViewProtocol {
         consoleView.print("")
     }
 
+    /// Displays the project menu with available operations and custom commands
+    /// - Parameter project: Project to show menu for
+    /// - Returns: User's menu selection or nil if invalid
     func showProjectMenu(for project: Project) -> MenuOption? {
+        // Display project header
         consoleView.print("\n" + "═".repeated(40).cyan)
         consoleView.print("Project: \(project.name)".bold.green)
         consoleView.print("Directory: \(project.workingDirectory)".dim)
         consoleView.print("═".repeated(40).cyan + "\n")
 
+        // Build the menu with standard operations
         var menuItems: [String] = []
         menuItems.append("📦 Clean Slate - Reset working directory")
         menuItems.append("💾 Save - Stash or branch uncommitted changes")
@@ -49,6 +62,7 @@ class MenuView: MenuViewProtocol {
         menuItems.append("🧪 Test - Run tests")
         menuItems.append("▶️  Run - Launch the app")
 
+        // Add custom commands if any are defined
         if let customCommands = project.customCommands, !customCommands.isEmpty {
             menuItems.append("─".repeated(30).dim)
             menuItems.append("Custom Commands:".bold)
@@ -115,6 +129,9 @@ class MenuView: MenuViewProtocol {
         }
     }
 
+    /// Displays project selection menu
+    /// - Parameter projects: Array of available projects
+    /// - Returns: Selected project or nil if user exits
     func selectProject(from projects: [Project]) -> Project? {
         consoleView.print("\n" + "Available Projects:".bold.green)
         consoleView.print("─".repeated(40).dim)
@@ -145,6 +162,8 @@ class MenuView: MenuViewProtocol {
         return projects[choice - 1]
     }
 
+    /// Displays operation selection menu (used for direct operation selection)
+    /// - Returns: Selected operation type or nil if cancelled
     func selectOperation() -> OperationType? {
         let options = OperationType.allCases
         let selected = consoleView.selectFromList("Select an operation:", options: options)
@@ -152,7 +171,11 @@ class MenuView: MenuViewProtocol {
     }
 }
 
+/// Extension to repeat strings for UI formatting
 extension String {
+    /// Creates a string by repeating this string a specified number of times
+    /// - Parameter count: Number of times to repeat the string
+    /// - Returns: New string with repeated content
     func repeated(_ count: Int) -> String {
         return String(repeating: self, count: count)
     }

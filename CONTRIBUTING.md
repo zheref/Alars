@@ -2,6 +2,28 @@
 
 Thank you for your interest in contributing to Alars! This document provides guidelines and instructions for extending the CLI with new operations and features.
 
+## Application Entry Point
+
+The Alars application starts execution in the `AlarsCommand` struct in `Sources/Alars/Commands/AlarsCommand.swift`. This is marked with the `@main` attribute, making it the Swift runtime's entry point.
+
+### Execution Flow
+
+1. **Main Entry**: `AlarsCommand` serves as the root command
+2. **Subcommand Routing**: ArgumentParser routes to one of three subcommands:
+   - `RunCommand` (default) - Interactive mode and direct operations
+   - `ListCommand` - List all configured projects
+   - `InitCommand` - Initialize new xprojects.json configuration
+3. **Service Initialization**: Each command creates its required services
+4. **Operation Execution**: Services coordinate to execute the requested operations
+
+### Key Components
+
+- **Commands Layer**: ArgumentParser-based CLI interface (`Commands/`)
+- **Controllers Layer**: Business logic orchestration (`Controllers/`)
+- **Services Layer**: External tool interactions (`Services/`)
+- **Models Layer**: Data structures and types (`Models/`)
+- **Views Layer**: User interface and console output (`Views/`)
+
 ## Architecture Overview
 
 Alars follows the MVC (Model-View-Controller) pattern:
@@ -208,6 +230,29 @@ swift run alars init
 # Test your new operation
 swift run alars run --project TestProject --operation your_new_operation
 ```
+
+## Debugging in Xcode
+
+The project is configured to open in Xcode for debugging:
+
+1. **Open in Xcode**: Double-click `Package.swift` or run `open Package.swift`
+2. **Set Arguments**: Edit the "alars" scheme to set command line arguments
+3. **Set Breakpoints**: Use the full Xcode debugging experience
+4. **Working Directory**: The scheme is configured to use the project directory as working directory
+
+### Common Debug Arguments
+
+- `--help` - Show help (default in scheme)
+- `list` - List projects
+- `init` - Initialize configuration
+- `run --project ProjectName --operation build` - Direct operation
+
+### Debugging Tips
+
+- Set breakpoints in `AlarsCommand.swift` to trace command routing
+- Use `RunCommand.swift` breakpoints for interactive flow debugging
+- Service classes are where external tool interactions happen
+- View classes handle all user input/output
 
 ## Code Style Guidelines
 

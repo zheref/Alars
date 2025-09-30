@@ -45,7 +45,25 @@ struct ListCommand: ParsableCommand {
             consoleView.print("Total: \(projects.count) project(s)\n")
 
         } catch {
-            consoleView.printError(error.localizedDescription)
+            // Handle specific case where xprojects.json is not found
+            if let alarsError = error as? AlarsError {
+                switch alarsError {
+                case .projectsFileNotFound:
+                    consoleView.printError("No xprojects.json file found in current directory")
+                    let shouldCreate = consoleView.askConfirmation("Would you like to create one now?")
+                    if shouldCreate {
+                        // Use the init command to create the configuration
+                        let initCommand = InitCommand()
+                        try initCommand.run()
+                    } else {
+                        consoleView.printInfo("You can create one later by running: alars init")
+                    }
+                default:
+                    consoleView.printError(error.localizedDescription)
+                }
+            } else {
+                consoleView.printError(error.localizedDescription)
+            }
             throw ExitCode.failure
         }
     }

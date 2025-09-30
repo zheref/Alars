@@ -1,10 +1,12 @@
 import Foundation
 
+/// Represents the outcome of an operation execution
 enum OperationResult {
-    case success(String)
-    case failure(Error)
-    case cancelled
+    case success(String)  // Operation succeeded with a message
+    case failure(Error)   // Operation failed with an error
+    case cancelled        // User cancelled the operation
 
+    /// Convenience property to check if the operation succeeded
     var isSuccess: Bool {
         if case .success = self {
             return true
@@ -13,6 +15,8 @@ enum OperationResult {
     }
 }
 
+/// Custom error types for Alars operations
+/// Provides user-friendly error messages
 enum AlarsError: LocalizedError {
     case projectsFileNotFound
     case invalidProjectsFile
@@ -25,6 +29,7 @@ enum AlarsError: LocalizedError {
     case customCommandNotFound(String)
     case operationCancelled
 
+    /// Provides localized, user-friendly error descriptions
     var errorDescription: String? {
         switch self {
         case .projectsFileNotFound:

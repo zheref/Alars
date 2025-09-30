@@ -1,15 +1,25 @@
 import Foundation
 
+/// Protocol defining the operation controller interface
+/// Allows for dependency injection and testing
 protocol OperationControllerProtocol {
     func executeOperation(_ operation: OperationType, on project: Project, parameters: [String: String]?) async throws -> OperationResult
     func executeCustomCommand(_ command: CustomCommand, on project: Project) async throws -> [OperationResult]
 }
 
+/// Controller responsible for orchestrating project operations
+/// Coordinates between services and user interface to execute operations
 class OperationController: OperationControllerProtocol {
+    // Service dependencies for external operations
     private let gitService: GitServiceProtocol
     private let xcodeService: XcodeServiceProtocol
     private let consoleView: ConsoleViewProtocol
 
+    /// Initializes the controller with service dependencies
+    /// - Parameters:
+    ///   - gitService: Service for Git operations
+    ///   - xcodeService: Service for Xcode operations
+    ///   - consoleView: Service for user interface
     init(gitService: GitServiceProtocol = GitService(),
          xcodeService: XcodeServiceProtocol = XcodeService(),
          consoleView: ConsoleViewProtocol = ConsoleView()) {
@@ -18,9 +28,17 @@ class OperationController: OperationControllerProtocol {
         self.consoleView = consoleView
     }
 
+    /// Executes a single operation on the specified project
+    /// - Parameters:
+    ///   - operation: Type of operation to execute
+    ///   - project: Target project configuration
+    ///   - parameters: Optional operation-specific parameters
+    /// - Returns: Result of the operation
+    /// - Throws: Various errors depending on the operation
     func executeOperation(_ operation: OperationType, on project: Project, parameters: [String: String]? = nil) async throws -> OperationResult {
         let workingDirectory = project.absoluteWorkingDirectory
 
+        // Route to appropriate operation handler
         switch operation {
         case .cleanSlate:
             return try await executeCleanSlate(at: workingDirectory, project: project)
@@ -37,15 +55,23 @@ class OperationController: OperationControllerProtocol {
         }
     }
 
+    /// Executes a custom command (sequence of operations) on the specified project
+    /// - Parameters:
+    ///   - command: Custom command containing operation sequence
+    ///   - project: Target project configuration
+    /// - Returns: Array of results for each operation in the sequence
+    /// - Throws: Various errors depending on the operations
     func executeCustomCommand(_ command: CustomCommand, on project: Project) async throws -> [OperationResult] {
         consoleView.printInfo("Executing custom command: \(command.alias)")
         var results: [OperationResult] = []
 
+        // Execute each operation in sequence
         for operation in command.operations {
             consoleView.printInfo("Running operation: \(operation.type.rawValue)")
             let result = try await executeOperation(operation.type, on: project, parameters: operation.parameters)
             results.append(result)
 
+            // Stop execution on first failure
             if case .failure = result {
                 consoleView.printError("Operation failed. Stopping custom command execution.")
                 break
@@ -55,14 +81,22 @@ class OperationController: OperationControllerProtocol {
         return results
     }
 
+    /// Executes the clean slate operation - resets working directory to clean state
+    /// WARNING: This discards all uncommitted changes permanently
+    /// - Parameters:
+    ///   - path: Path to the project directory
+    ///   - project: Project configuration (unused but kept for consistency)
+    /// - Returns: Operation result
     private func executeCleanSlate(at path: String, project: Project) async throws -> OperationResult {
         consoleView.printInfo("Checking working directory status...")
 
+        // Check if directory is already clean
         let isClean = try gitService.isCleanWorkingDirectory(at: path)
         if isClean {
             return .success("Working directory is already clean")
         }
 
+        // Confirm with user before destructive operation
         let shouldProceed = consoleView.askConfirmation("This will discard all uncommitted changes. Are you sure?")
         guard shouldProceed else {
             return .cancelled

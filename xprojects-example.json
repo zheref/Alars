@@ -1,0 +1,63 @@
+{
+  "projects": [
+    {
+      "name": "SampleApp",
+      "workingDirectory": "~/Projects/SampleApp",
+      "repositoryURL": "https://github.com/example/SampleApp.git",
+      "configuration": {
+        "defaultBranch": "main",
+        "defaultScheme": "SampleApp",
+        "defaultTestScheme": "SampleAppTests",
+        "defaultSimulator": "iPhone 15",
+        "savePreference": "stash"
+      },
+      "customCommands": [
+        {
+          "alias": "fresh-start",
+          "description": "Clean slate and update from main",
+          "operations": [
+            {
+              "type": "clean_slate"
+            },
+            {
+              "type": "update"
+            }
+          ]
+        },
+        {
+          "alias": "full-ci",
+          "description": "Complete CI workflow",
+          "operations": [
+            {
+              "type": "clean_slate"
+            },
+            {
+              "type": "update"
+            },
+            {
+              "type": "build",
+              "parameters": {
+                "scheme": "SampleApp"
+              }
+            },
+            {
+              "type": "test",
+              "parameters": {
+                "scheme": "SampleAppTests"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "LibraryProject",
+      "workingDirectory": "~/Projects/MyLibrary",
+      "configuration": {
+        "defaultBranch": "develop",
+        "defaultScheme": "MyLibrary",
+        "savePreference": "branch"
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Swift Package Manager
+.build/
+.swiftpm/
+.DS_Store
+/*.xcodeproj
+xcuserdata/
+DerivedData/
+Package.resolved
+
+# Xcode
+*.xcworkspace/xcshareddata/
+
+# User configuration
+xprojects.json

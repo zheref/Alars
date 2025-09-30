@@ -76,12 +76,11 @@ class XcodeService: XcodeServiceProtocol {
         return schemes
     }
 
-    /// Builds the specified Xcode project or workspace for the iOS Simulator in Debug configuration.
+    /// Builds the specified Xcode project or workspace using the scheme's default configuration.
     ///
     /// This method discovers an `.xcworkspace` or `.xcodeproj` in the provided directory and prefers
     /// the workspace if both are present. It then invokes `xcodebuild` with the given scheme,
-    /// targeting the iOS Simulator SDK (`-sdk iphonesimulator`) and the Debug configuration,
-    /// returning the raw standard output from the build command.
+    /// allowing xcodebuild to use the scheme's default destinations and SDKs (just like Xcode does).
     ///
     /// - Parameters:
     ///   - path: Absolute or relative path to the directory containing the Xcode project (`.xcodeproj`)
@@ -99,7 +98,7 @@ class XcodeService: XcodeServiceProtocol {
     ///   - Any file system errors thrown while reading the directory contents.
     ///
     /// - Note:
-    ///   - Uses `-configuration Debug` and `-sdk iphonesimulator`.
+    ///   - Uses the scheme's default configuration and destination (same as Xcode).
     ///   - This performs a build only; it does not run or test the app.
     ///   - Ensure Xcode command-line tools are installed and `xcodebuild` is available in the environment.
     ///
@@ -129,17 +128,18 @@ class XcodeService: XcodeServiceProtocol {
         }
 
         let verboseFlag = verbose ? "" : "-quiet"
-        let buildCommand = "xcodebuild \(projectArg) -scheme '\(scheme)' -configuration Debug -sdk iphonesimulator build \(verboseFlag)"
+        // Removed -sdk iphonesimulator to let xcodebuild use the scheme's default destination
+        // This matches Xcode's behavior and supports multi-platform schemes
+        let buildCommand = "xcodebuild \(projectArg) -scheme '\(scheme)' build \(verboseFlag)"
 
         return try shellOut(to: buildCommand, at: path)
     }
 
-    /// Runs tests for the specified Xcode project or workspace using xcodebuild for the iOS Simulator.
+    /// Runs tests for the specified Xcode project or workspace using the scheme's default configuration.
     ///
     /// This method searches the provided directory for an `.xcworkspace` or `.xcodeproj`, preferring
-    /// the workspace if both exist. It then executes:
-    /// `xcodebuild -scheme <scheme> -sdk iphonesimulator test`
-    /// and returns the raw standard output produced by the command.
+    /// the workspace if both exist. It then executes xcodebuild test using the scheme's default
+    /// destination and SDK (just like Xcode does).
     ///
     /// - Parameters:
     ///   - path: Absolute or relative path to the directory that contains the Xcode project (`.xcodeproj`)
@@ -154,8 +154,7 @@ class XcodeService: XcodeServiceProtocol {
     ///   - Any file system errors thrown while reading the directory contents.
     ///
     /// - Notes:
-    ///   - Targets the iOS Simulator SDK via `-sdk iphonesimulator`.
-    ///   - No explicit destination is set; `xcodebuild` selects a suitable available simulator.
+    ///   - Uses the scheme's default configuration and destination (same as Xcode).
     ///   - Ensure Xcode command-line tools are installed and `xcodebuild` is available in the environment.
     ///   - The returned output contains the full `xcodebuild` test logs, which you may parse for results.
     ///
@@ -183,7 +182,9 @@ class XcodeService: XcodeServiceProtocol {
             throw AlarsError.xcodeBuildFailed("No Xcode project or workspace found")
         }
 
-        let testCommand = "xcodebuild \(projectArg) -scheme \(scheme) -sdk iphonesimulator test"
+        // Removed -sdk iphonesimulator to let xcodebuild use the scheme's default destination
+        // This matches Xcode's behavior and supports multi-platform schemes
+        let testCommand = "xcodebuild \(projectArg) -scheme \(scheme) test"
         return try shellOut(to: testCommand, at: path)
     }
 

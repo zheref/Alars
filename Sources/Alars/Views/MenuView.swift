@@ -82,6 +82,7 @@ class MenuView: MenuViewProtocol {
         menuItems.append("🔨 Build - Build the project")
         menuItems.append("🧪 Test - Run tests")
         menuItems.append("▶️  Run - Launch the app")
+        menuItems.append("🔄 Reset - Clean build, derived data, and reinstall dependencies")
 
         // Add custom commands if any are defined
         if let customCommands = project.customCommands, !customCommands.isEmpty {
@@ -124,7 +125,7 @@ class MenuView: MenuViewProtocol {
             return nil
         }
 
-        let operationCount = 6
+        let operationCount = 7
         let customCommandsCount = project.customCommands?.count ?? 0
 
         switch choice {
@@ -134,7 +135,8 @@ class MenuView: MenuViewProtocol {
         case 4: return .operation(.build)
         case 5: return .operation(.test)
         case 6: return .operation(.run)
-        case 7...operationCount + customCommandsCount where customCommandsCount > 0:
+        case 7: return .operation(.reset)
+        case 8...operationCount + customCommandsCount where customCommandsCount > 0:
             let commandIndex = choice - operationCount - 1
             if let command = project.customCommands?[commandIndex] {
                 return .customCommand(command.alias)

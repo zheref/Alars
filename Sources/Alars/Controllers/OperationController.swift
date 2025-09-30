@@ -1,4 +1,5 @@
 import Foundation
+import ShellOut
 
 /// Protocol defining the operation controller interface
 /// Allows for dependency injection and testing
@@ -14,18 +15,22 @@ class OperationController: OperationControllerProtocol {
     private let gitService: GitServiceProtocol
     private let xcodeService: XcodeServiceProtocol
     private let consoleView: ConsoleViewProtocol
+    private let errorReportService: ErrorReportService
 
     /// Initializes the controller with service dependencies
     /// - Parameters:
     ///   - gitService: Service for Git operations
     ///   - xcodeService: Service for Xcode operations
     ///   - consoleView: Service for user interface
+    ///   - errorReportService: Service for error reporting
     init(gitService: GitServiceProtocol = GitService(),
          xcodeService: XcodeServiceProtocol = XcodeService(),
-         consoleView: ConsoleViewProtocol = ConsoleView()) {
+         consoleView: ConsoleViewProtocol = ConsoleView(),
+         errorReportService: ErrorReportService = ErrorReportService()) {
         self.gitService = gitService
         self.xcodeService = xcodeService
         self.consoleView = consoleView
+        self.errorReportService = errorReportService
     }
 
     /// Executes a single operation on the specified project
@@ -52,6 +57,8 @@ class OperationController: OperationControllerProtocol {
             return try await executeTest(at: workingDirectory, project: project, parameters: parameters)
         case .run:
             return try await executeRun(at: workingDirectory, project: project, parameters: parameters)
+        case .reset:
+            return try await executeReset(at: workingDirectory, project: project)
         }
     }
 
@@ -174,13 +181,26 @@ class OperationController: OperationControllerProtocol {
         let verbose = consoleView.askConfirmation("Enable verbose output?")
 
         consoleView.printProgress("Building scheme: \(selectedScheme)...")
-        let output = try xcodeService.buildProject(at: path, scheme: selectedScheme, verbose: verbose)
 
-        if verbose {
-            consoleView.print(output)
+        do {
+            let output = try xcodeService.buildProject(at: path, scheme: selectedScheme, verbose: verbose)
+
+            if verbose {
+                consoleView.print(output)
+            }
+
+            return .success("Build completed successfully for scheme: \(selectedScheme)")
+        } catch {
+            // Generate error report for build failures
+            let reportPath = errorReportService.generateErrorReport(
+                operation: "build",
+                project: project,
+                error: error,
+                output: (error as? ShellOutError)?.output
+            )
+            consoleView.printWarning("Error report generated: \(reportPath)")
+            throw error
         }
-
-        return .success("Build completed successfully for scheme: \(selectedScheme)")
     }
 
     private func executeTest(at path: String, project: Project, parameters: [String: String]?) async throws -> OperationResult {
@@ -200,10 +220,23 @@ class OperationController: OperationControllerProtocol {
         }
 
         consoleView.printProgress("Running tests for scheme: \(selectedScheme)...")
-        let output = try xcodeService.runTests(at: path, scheme: selectedScheme)
-        consoleView.print(output)
 
-        return .success("Tests completed for scheme: \(selectedScheme)")
+        do {
+            let output = try xcodeService.runTests(at: path, scheme: selectedScheme)
+            consoleView.print(output)
+
+            return .success("Tests completed for scheme: \(selectedScheme)")
+        } catch {
+            // Generate error report for test failures
+            let reportPath = errorReportService.generateErrorReport(
+                operation: "test",
+                project: project,
+                error: error,
+                output: (error as? ShellOutError)?.output
+            )
+            consoleView.printWarning("Error report generated: \(reportPath)")
+            throw error
+        }
     }
 
     private func executeRun(at path: String, project: Project, parameters: [String: String]?) async throws -> OperationResult {
@@ -248,5 +281,47 @@ class OperationController: OperationControllerProtocol {
         try xcodeService.runProject(at: path, scheme: selectedScheme, simulator: selectedSimulator)
 
         return .success("Successfully launched \(selectedScheme)")
+    }
+
+    private func executeReset(at path: String, project: Project) async throws -> OperationResult {
+        consoleView.printInfo("This will clean build folder, remove derived data, and reinstall dependencies")
+
+        let shouldProceed = consoleView.askConfirmation("Are you sure you want to reset the project?")
+        guard shouldProceed else {
+            return .cancelled
+        }
+
+        consoleView.printProgress("Cleaning build folder...")
+        try xcodeService.cleanBuildFolder(at: path)
+
+        consoleView.printProgress("Removing derived data...")
+        try xcodeService.cleanDerivedData()
+
+        consoleView.printProgress("Reinstalling dependencies...")
+        // Check for different dependency managers
+        let fileManager = FileManager.default
+
+        // Check for SPM (Package.swift or .xcodeproj with SPM)
+        let packageSwiftPath = (path as NSString).appendingPathComponent("Package.swift")
+        if fileManager.fileExists(atPath: packageSwiftPath) {
+            consoleView.printInfo("Detected Swift Package Manager")
+            try shellOut(to: "swift package resolve", at: path)
+        }
+
+        // Check for CocoaPods (Podfile)
+        let podfilePath = (path as NSString).appendingPathComponent("Podfile")
+        if fileManager.fileExists(atPath: podfilePath) {
+            consoleView.printInfo("Detected CocoaPods")
+            try shellOut(to: "pod install", at: path)
+        }
+
+        // Check for Carthage (Cartfile)
+        let cartfilePath = (path as NSString).appendingPathComponent("Cartfile")
+        if fileManager.fileExists(atPath: cartfilePath) {
+            consoleView.printInfo("Detected Carthage")
+            try shellOut(to: "carthage bootstrap --use-xcframeworks", at: path)
+        }
+
+        return .success("Successfully reset project")
     }
 }

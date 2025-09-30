@@ -8,6 +8,8 @@ protocol XcodeServiceProtocol {
     func runTests(at path: String, scheme: String) throws -> String
     func listSimulators() throws -> [Simulator]
     func runProject(at path: String, scheme: String, simulator: String?) throws
+    func cleanBuildFolder(at path: String) throws
+    func cleanDerivedData() throws
 }
 
 /// Represents an iOS/tvOS/watchOS simulator
@@ -235,5 +237,35 @@ class XcodeService: XcodeServiceProtocol {
         runCommand += " run"
 
         try shellOut(to: runCommand, at: path)
+    }
+
+    /// Cleans the build folder for the project
+    /// - Parameter path: Path to the project directory
+    /// - Throws: AlarsError if no project found or xcodebuild fails
+    func cleanBuildFolder(at path: String) throws {
+        let projectFiles = try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: path),
+                                                                      includingPropertiesForKeys: nil)
+
+        let xcodeproj = projectFiles.first { $0.pathExtension == "xcodeproj" }
+        let xcworkspace = projectFiles.first { $0.pathExtension == "xcworkspace" }
+
+        let projectArg: String
+        if let workspace = xcworkspace {
+            projectArg = "-workspace \(workspace.lastPathComponent)"
+        } else if let project = xcodeproj {
+            projectArg = "-project \(project.lastPathComponent)"
+        } else {
+            throw AlarsError.xcodeBuildFailed("No Xcode project or workspace found")
+        }
+
+        let cleanCommand = "xcodebuild \(projectArg) clean"
+        try shellOut(to: cleanCommand, at: path)
+    }
+
+    /// Removes all derived data for all projects
+    /// - Throws: ShellOutError if removal fails
+    func cleanDerivedData() throws {
+        let derivedDataPath = "~/Library/Developer/Xcode/DerivedData"
+        try shellOut(to: "rm -rf \(derivedDataPath)/*")
     }
 }

@@ -12,9 +12,15 @@ struct AlarsCommand: AsyncParsableCommand {
         abstract: "A powerful Xcode project management CLI",
         version: "1.0.0",
         subcommands: [
-            RunCommand.self,    // Interactive mode and direct operations
-            ListCommand.self,   // List all configured projects
-            InitCommand.self    // Initialize new configuration
+            RunCommand.self,        // Interactive mode and direct operations
+            ListCommand.self,       // List all configured projects
+            InitCommand.self,       // Initialize new configuration
+            BuildCommand.self,      // Build shortcut
+            TestCommand.self,       // Test shortcut
+            CleanCommand.self,      // Clean slate shortcut
+            ResetCommand.self,      // Reset shortcut
+            SaveCommand.self,       // Save shortcut
+            UpdateCommand.self      // Update shortcut
         ],
         defaultSubcommand: RunCommand.self  // Run interactive mode by default
     )

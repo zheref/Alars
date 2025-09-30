@@ -93,6 +93,7 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
     case build                        // Build the project
     case test                         // Run tests
     case run                          // Launch the app
+    case reset                        // Clean build folder, derived data, and reinstall dependencies
 
     /// User-friendly display name for the operation
     var description: String {
@@ -103,6 +104,7 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
         case .build: return "Build"
         case .test: return "Test"
         case .run: return "Run"
+        case .reset: return "Reset"
         }
     }
 }

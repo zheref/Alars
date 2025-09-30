@@ -74,6 +74,42 @@ class XcodeService: XcodeServiceProtocol {
         return schemes
     }
 
+    /// Builds the specified Xcode project or workspace for the iOS Simulator in Debug configuration.
+    ///
+    /// This method discovers an `.xcworkspace` or `.xcodeproj` in the provided directory and prefers
+    /// the workspace if both are present. It then invokes `xcodebuild` with the given scheme,
+    /// targeting the iOS Simulator SDK (`-sdk iphonesimulator`) and the Debug configuration,
+    /// returning the raw standard output from the build command.
+    ///
+    /// - Parameters:
+    ///   - path: Absolute or relative path to the directory containing the Xcode project (`.xcodeproj`)
+    ///           or workspace (`.xcworkspace`). If both exist, the workspace is used.
+    ///   - scheme: The Xcode scheme to build. The scheme must be shared or otherwise discoverable
+    ///             by `xcodebuild`.
+    ///   - verbose: When `true`, emits full `xcodebuild` output. When `false`, passes `-quiet` to
+    ///              `xcodebuild` to reduce console noise.
+    ///
+    /// - Returns: The standard output text produced by `xcodebuild` during the build.
+    ///
+    /// - Throws:
+    ///   - `AlarsError.xcodeBuildFailed` if no `.xcodeproj` or `.xcworkspace` is found at `path`.
+    ///   - `ShellOutError` if the underlying `xcodebuild` command fails.
+    ///   - Any file system errors thrown while reading the directory contents.
+    ///
+    /// - Note:
+    ///   - Uses `-configuration Debug` and `-sdk iphonesimulator`.
+    ///   - This performs a build only; it does not run or test the app.
+    ///   - Ensure Xcode command-line tools are installed and `xcodebuild` is available in the environment.
+    ///
+    /// - Example:
+    ///   ```swift
+    ///   let output = try xcodeService.buildProject(
+    ///       at: "/path/to/MyApp",
+    ///       scheme: "MyApp",
+    ///       verbose: true
+    ///   )
+    ///   print(output)
+    ///   ```
     func buildProject(at path: String, scheme: String, verbose: Bool) throws -> String {
         let projectFiles = try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: path),
                                                                       includingPropertiesForKeys: nil)
@@ -91,11 +127,44 @@ class XcodeService: XcodeServiceProtocol {
         }
 
         let verboseFlag = verbose ? "" : "-quiet"
-        let buildCommand = "xcodebuild \(projectArg) -scheme \(scheme) -configuration Debug -sdk iphonesimulator build \(verboseFlag)"
+        let buildCommand = "xcodebuild \(projectArg) -scheme '\(scheme)' -configuration Debug -sdk iphonesimulator build \(verboseFlag)"
 
         return try shellOut(to: buildCommand, at: path)
     }
 
+    /// Runs tests for the specified Xcode project or workspace using xcodebuild for the iOS Simulator.
+    ///
+    /// This method searches the provided directory for an `.xcworkspace` or `.xcodeproj`, preferring
+    /// the workspace if both exist. It then executes:
+    /// `xcodebuild -scheme <scheme> -sdk iphonesimulator test`
+    /// and returns the raw standard output produced by the command.
+    ///
+    /// - Parameters:
+    ///   - path: Absolute or relative path to the directory that contains the Xcode project (`.xcodeproj`)
+    ///           or workspace (`.xcworkspace`). If both are present, the workspace is used.
+    ///   - scheme: The Xcode scheme to test. The scheme must be shared and have tests configured.
+    ///
+    /// - Returns: The standard output text from `xcodebuild` while running the tests.
+    ///
+    /// - Throws:
+    ///   - `AlarsError.xcodeBuildFailed` if neither an `.xcodeproj` nor an `.xcworkspace` is found at `path`.
+    ///   - `ShellOutError` if the underlying `xcodebuild` command fails (non-zero exit status).
+    ///   - Any file system errors thrown while reading the directory contents.
+    ///
+    /// - Notes:
+    ///   - Targets the iOS Simulator SDK via `-sdk iphonesimulator`.
+    ///   - No explicit destination is set; `xcodebuild` selects a suitable available simulator.
+    ///   - Ensure Xcode command-line tools are installed and `xcodebuild` is available in the environment.
+    ///   - The returned output contains the full `xcodebuild` test logs, which you may parse for results.
+    ///
+    /// - Example:
+    ///   ```swift
+    ///   let logs = try xcodeService.runTests(
+    ///       at: "/path/to/MyApp",
+    ///       scheme: "MyApp"
+    ///   )
+    ///   print(logs)
+    ///   ```
     func runTests(at path: String, scheme: String) throws -> String {
         let projectFiles = try FileManager.default.contentsOfDirectory(at: URL(fileURLWithPath: path),
                                                                       includingPropertiesForKeys: nil)

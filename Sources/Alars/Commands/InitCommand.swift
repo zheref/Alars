@@ -11,7 +11,11 @@ struct InitCommand: ParsableCommand {
     func run() throws {
         let consoleView = ConsoleView()
         let fileManager = FileManager.default
-        let projectsFilePath = fileManager.currentDirectoryPath.appending("/xprojects.json")
+        let currentDir = fileManager.currentDirectoryPath
+        let projectsFilePath = currentDir.appending("/xprojects.json")
+
+        // Show current working directory so user knows where file will be created
+        consoleView.printInfo("Working directory: \(currentDir)")
 
         if fileManager.fileExists(atPath: projectsFilePath) {
             let overwrite = consoleView.askConfirmation("xprojects.json already exists. Overwrite?")

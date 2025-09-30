@@ -12,6 +12,10 @@ struct ListCommand: ParsableCommand {
         let projectService = ProjectService()
         let consoleView = ConsoleView()
 
+        // Show current working directory to help users understand context
+        let currentDir = FileManager.default.currentDirectoryPath
+        consoleView.printInfo("Working directory: \(currentDir)")
+
         do {
             let projects = try projectService.loadProjects()
 
@@ -50,6 +54,7 @@ struct ListCommand: ParsableCommand {
                 switch alarsError {
                 case .projectsFileNotFound:
                     consoleView.printError("No xprojects.json file found in current directory")
+                    consoleView.printInfo("Current directory: \(FileManager.default.currentDirectoryPath)")
                     let shouldCreate = consoleView.askConfirmation("Would you like to create one now?")
                     if shouldCreate {
                         // Use the init command to create the configuration

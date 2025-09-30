@@ -31,6 +31,10 @@ struct RunCommand: AsyncParsableCommand {
         let consoleView = ConsoleView()
         let operationController = OperationController()
 
+        // Show current working directory to help users understand context
+        let currentDir = FileManager.default.currentDirectoryPath
+        consoleView.printInfo("Working directory: \(currentDir)")
+
         do {
             // Load project configurations from xprojects.json
             let projects = try projectService.loadProjects()
@@ -78,6 +82,7 @@ struct RunCommand: AsyncParsableCommand {
                 switch alarsError {
                 case .projectsFileNotFound:
                     consoleView.printError("No xprojects.json file found in current directory")
+                    consoleView.printInfo("Current directory: \(FileManager.default.currentDirectoryPath)")
                     let shouldCreate = consoleView.askConfirmation("Would you like to create one now?")
                     if shouldCreate {
                         // Use the init command to create the configuration

@@ -32,14 +32,35 @@ class MenuView: MenuViewProtocol {
     /// Clears screen and shows the Alars CLI banner
     func showMainMenu() {
         consoleView.clear()
+
+        // Cosmic-inspired header with celestial elements
+        let stars = "✦ ✧ ⋆ ✦ ✧ ⋆ ✦ ✧ ⋆ ✦ ✧ ⋆".yellow.dim
+
         let header = """
-        ╔════════════════════════════════════╗
-        ║           ALARS CLI                ║
-        ║   Xcode Project Manager            ║
-        ╚════════════════════════════════════╝
+
+        ┌─────────────────────────────────────────────┐
+        │  ⟨ ⟩  ALARS: The Eternal Project Forge  ⟨ ⟩  │
+        │         ∞ Infinite Development Power ∞     │
+        └─────────────────────────────────────────────┘
+
+             🌌 "In the vast cosmos of code,
+                 every project is eternal" 🌌
+
         """.cyan.bold
 
+        let subtitle = """
+        ╭─ Cosmic Abilities Unlocked ─╮
+        │  🔮 Build • Test • Deploy   │
+        │  ⚡ Git Flow Mastery        │
+        │  🚀 Simulator Control       │
+        │  ∞  Custom Command Chains   │
+        ╰─────────────────────────────╯
+        """.magenta
+
+        consoleView.print(stars)
         consoleView.print(header)
+        consoleView.print(subtitle)
+        consoleView.print(stars)
         consoleView.print("")
     }
 

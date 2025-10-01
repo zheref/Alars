@@ -76,13 +76,13 @@ class MenuView: MenuViewProtocol {
 
         // Build the menu with standard operations
         var menuItems: [String] = []
-        menuItems.append("📦 Clean Slate - Reset working directory")
-        menuItems.append("💾 Save - Stash or branch uncommitted changes")
-        menuItems.append("🔄 Update - Pull latest changes")
-        menuItems.append("🔨 Build - Build the project")
-        menuItems.append("🧪 Test - Run tests")
-        menuItems.append("▶️  Run - Launch the app")
-        menuItems.append("🔄 Reset - Clean build, derived data, and reinstall dependencies")
+        menuItems.append("[c] 📦 Clean Slate - Reset working directory")
+        menuItems.append("[s] 💾 Save - Stash or branch uncommitted changes")
+        menuItems.append("[u] 🔄 Update - Pull latest changes")
+        menuItems.append("[b] 🔨 Build - Build the project")
+        menuItems.append("[t] 🧪 Test - Run tests")
+        menuItems.append("[r] ▶️  Run - Launch the app")
+        menuItems.append("[e] 🔄 Reset - Clean build, derived data, and reinstall dependencies")
 
         // Add custom commands if any are defined
         if let customCommands = project.customCommands, !customCommands.isEmpty {
@@ -97,13 +97,20 @@ class MenuView: MenuViewProtocol {
         menuItems.append("🔙 Back to project selection")
         menuItems.append("🚪 Exit")
 
-        for (index, item) in menuItems.enumerated() {
+        for item in menuItems {
             if item.starts(with: "─") || item == "Custom Commands:".bold {
                 consoleView.print(item)
             } else {
-                consoleView.print("  \(index + 1). \(item)")
+                consoleView.print("  \(item)")
             }
         }
+
+        menuItems.append("─".repeated(30).dim)
+        menuItems.append("[x] 🔙 Back to project selection")
+        menuItems.append("[q] 🚪 Exit")
+
+        consoleView.print("  [x] 🔙 Back to project selection")
+        consoleView.print("  [q] 🚪 Exit")
 
         Swift.print("\nSelect an option: ".cyan, terminator: "")
 
@@ -111,45 +118,32 @@ class MenuView: MenuViewProtocol {
             return .exit
         }
 
-        if input.lowercased() == "exit" || input.lowercased() == "quit" {
+        let trimmedInput = input.trimmingCharacters(in: .whitespaces).lowercased()
+
+        // Handle exit commands
+        if trimmedInput == "exit" || trimmedInput == "quit" || trimmedInput == "q" {
             return .exit
         }
 
-        guard let choice = Int(input) else {
-            if let customCommands = project.customCommands {
-                if customCommands.contains(where: { $0.alias == input }) {
-                    return .customCommand(input)
-                }
-            }
-            consoleView.printError("Invalid choice")
-            return nil
-        }
-
-        let operationCount = 7
-        let customCommandsCount = project.customCommands?.count ?? 0
-
-        switch choice {
-        case 1: return .operation(.cleanSlate)
-        case 2: return .operation(.save)
-        case 3: return .operation(.update)
-        case 4: return .operation(.build)
-        case 5: return .operation(.test)
-        case 6: return .operation(.run)
-        case 7: return .operation(.reset)
-        case 8...operationCount + customCommandsCount where customCommandsCount > 0:
-            let commandIndex = choice - operationCount - 1
-            if let command = project.customCommands?[commandIndex] {
-                return .customCommand(command.alias)
-            }
-            return nil
-        case operationCount + customCommandsCount + 1:
+        // Handle back command
+        if trimmedInput == "x" || trimmedInput == "back" {
             return .back
-        case operationCount + customCommandsCount + 2:
-            return .exit
-        default:
-            consoleView.printError("Invalid choice")
-            return nil
         }
+
+        // Try to match operation by letter key
+        if let operation = OperationType(fromLetter: trimmedInput) {
+            return .operation(operation)
+        }
+
+        // Try to match custom command by alias
+        if let customCommands = project.customCommands {
+            if customCommands.contains(where: { $0.alias == trimmedInput }) {
+                return .customCommand(trimmedInput)
+            }
+        }
+
+        consoleView.printError("Invalid choice")
+        return nil
     }
 
     /// Displays project selection menu

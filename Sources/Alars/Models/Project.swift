@@ -107,6 +107,27 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
         case .reset: return "Reset"
         }
     }
+
+    /// Letter key for quick selection and sequences
+    var letterKey: String {
+        switch self {
+        case .cleanSlate: return "c"  // Clean
+        case .save: return "s"         // Save
+        case .update: return "u"       // Update
+        case .build: return "b"        // Build
+        case .test: return "t"         // Test
+        case .run: return "r"          // Run
+        case .reset: return "e"        // rEset (since 'r' is taken by run)
+        }
+    }
+
+    /// Initialize from letter key
+    init?(fromLetter letter: String) {
+        guard let operation = OperationType.allCases.first(where: { $0.letterKey == letter.lowercased() }) else {
+            return nil
+        }
+        self = operation
+    }
 }
 
 /// Root structure of the xprojects.json file

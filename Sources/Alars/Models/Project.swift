@@ -94,6 +94,8 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
     case test                         // Run tests
     case run                          // Launch the app
     case reset                        // Clean build folder, derived data, and reinstall dependencies
+    case freshChangeset = "fresh_changeset"  // Start a fresh changeset
+    case resumeChangeset = "resume_changeset"  // Resume an existing changeset
 
     /// User-friendly display name for the operation
     var description: String {
@@ -105,6 +107,8 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
         case .test: return "Test"
         case .run: return "Run"
         case .reset: return "Reset"
+        case .freshChangeset: return "Fresh Changeset"
+        case .resumeChangeset: return "Resume Changeset"
         }
     }
 
@@ -118,6 +122,8 @@ enum OperationType: String, Codable, CaseIterable, CustomStringConvertible {
         case .test: return "t"         // Test
         case .run: return "r"          // Run
         case .reset: return "e"        // rEset (since 'r' is taken by run)
+        case .freshChangeset: return "f"  // Fresh
+        case .resumeChangeset: return "m"  // resuMe
         }
     }
 

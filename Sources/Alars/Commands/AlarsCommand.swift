@@ -16,6 +16,7 @@ struct AlarsCommand: AsyncParsableCommand {
             ListCommand.self,       // List all configured projects
             InitCommand.self,       // Initialize new configuration
             QuickCommand.self,      // Quick sequence execution
+            ChangesetCommand.self,  // Changeset management
             BuildCommand.self,      // Build shortcut
             TestCommand.self,       // Test shortcut
             CleanCommand.self,      // Clean slate shortcut

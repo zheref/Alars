@@ -83,6 +83,10 @@ class MenuView: MenuViewProtocol {
         menuItems.append("[t] 🧪 Test - Run tests")
         menuItems.append("[r] ▶️  Run - Launch the app")
         menuItems.append("[e] 🔄 Reset - Clean build, derived data, and reinstall dependencies")
+        menuItems.append("─".repeated(30).dim)
+        menuItems.append("Changesets:".bold)
+        menuItems.append("[f] 🆕 Fresh Changeset - Start new work on a ticket")
+        menuItems.append("[m] 🔁 Resume Changeset - Resume previous work")
 
         // Add custom commands if any are defined
         if let customCommands = project.customCommands, !customCommands.isEmpty {

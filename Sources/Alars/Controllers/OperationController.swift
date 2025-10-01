@@ -59,6 +59,10 @@ class OperationController: OperationControllerProtocol {
             return try await executeRun(at: workingDirectory, project: project, parameters: parameters)
         case .reset:
             return try await executeReset(at: workingDirectory, project: project)
+        case .freshChangeset:
+            return try await executeFreshChangeset(at: workingDirectory, project: project, parameters: parameters)
+        case .resumeChangeset:
+            return try await executeResumeChangeset(at: workingDirectory, project: project, parameters: parameters)
         }
     }
 
@@ -323,5 +327,90 @@ class OperationController: OperationControllerProtocol {
         }
 
         return .success("Successfully reset project")
+    }
+
+    private func executeFreshChangeset(at path: String, project: Project, parameters: [String: String]?) async throws -> OperationResult {
+        // Get changeset ID from parameters or prompt user
+        let changesetId: String
+        if let paramId = parameters?["changeset_id"] {
+            changesetId = paramId
+        } else {
+            guard let inputId = consoleView.askInput("Enter changeset/ticket ID (e.g., TICKET-123):") else {
+                return .cancelled
+            }
+            changesetId = inputId
+        }
+
+        consoleView.printInfo("Creating fresh changeset: \(changesetId)")
+
+        // Check if we have uncommitted changes
+        let isClean = try gitService.isCleanWorkingDirectory(at: path)
+        if !isClean {
+            consoleView.printProgress("Stashing uncommitted changes...")
+            let currentBranch = try gitService.getCurrentBranch(at: path)
+            try gitService.stashWithName(at: path, name: currentBranch)
+            consoleView.printSuccess("Changes stashed with name: \(currentBranch)")
+        }
+
+        // Create the changeset branch
+        let branchName = "changeset/\(changesetId)"
+        let branchExists = try gitService.branchExists(at: path, branch: branchName)
+
+        if branchExists {
+            consoleView.printWarning("Branch '\(branchName)' already exists. Switching to it...")
+            try gitService.switchToBranch(at: path, branch: branchName)
+        } else {
+            consoleView.printProgress("Creating new branch: \(branchName)")
+            try gitService.createBranch(at: path, name: branchName, commitChanges: false)
+        }
+
+        return .success("Fresh changeset ready on branch: \(branchName)")
+    }
+
+    private func executeResumeChangeset(at path: String, project: Project, parameters: [String: String]?) async throws -> OperationResult {
+        // Get changeset ID from parameters or prompt user
+        let changesetId: String
+        if let paramId = parameters?["changeset_id"] {
+            changesetId = paramId
+        } else {
+            guard let inputId = consoleView.askInput("Enter changeset/ticket ID to resume (e.g., TICKET-123):") else {
+                return .cancelled
+            }
+            changesetId = inputId
+        }
+
+        consoleView.printInfo("Resuming changeset: \(changesetId)")
+
+        // Check if we have uncommitted changes
+        let isClean = try gitService.isCleanWorkingDirectory(at: path)
+        if !isClean {
+            consoleView.printProgress("Stashing uncommitted changes...")
+            let currentBranch = try gitService.getCurrentBranch(at: path)
+            try gitService.stashWithName(at: path, name: currentBranch)
+            consoleView.printSuccess("Changes stashed with name: \(currentBranch)")
+        }
+
+        // Switch to the changeset branch
+        let branchName = "changeset/\(changesetId)"
+        let branchExists = try gitService.branchExists(at: path, branch: branchName)
+
+        if !branchExists {
+            throw AlarsError.gitOperationFailed("Changeset branch '\(branchName)' does not exist. Use Fresh Changeset to create it.")
+        }
+
+        consoleView.printProgress("Switching to branch: \(branchName)")
+        try gitService.switchToBranch(at: path, branch: branchName)
+
+        // Try to pop the stash for this changeset
+        consoleView.printProgress("Looking for stashed changes for this changeset...")
+        let stashPopped = try gitService.popStashByName(at: path, name: branchName)
+
+        if stashPopped {
+            consoleView.printSuccess("Stashed changes restored!")
+        } else {
+            consoleView.printInfo("No stashed changes found for this changeset")
+        }
+
+        return .success("Changeset resumed on branch: \(branchName)")
     }
 }

@@ -11,6 +11,10 @@ protocol GitServiceProtocol {
     func pullLatestChanges(at path: String, branch: String) throws
     func getCurrentBranch(at path: String) throws -> String
     func switchToBranch(at path: String, branch: String) throws
+    func branchExists(at path: String, branch: String) throws -> Bool
+    func stashWithName(at path: String, name: String) throws
+    func getStashList(at path: String) throws -> [String]
+    func popStashByName(at path: String, name: String) throws -> Bool
 }
 
 /// Service responsible for executing Git operations
@@ -101,5 +105,65 @@ class GitService: GitServiceProtocol {
     /// - Throws: ShellOut error if checkout fails
     func switchToBranch(at path: String, branch: String) throws {
         try shellOut(to: "git checkout \(branch)", at: path)
+    }
+
+    /// Checks if a branch exists in the repository
+    /// - Parameters:
+    ///   - path: Path to the Git repository
+    ///   - branch: Name of the branch to check
+    /// - Returns: true if branch exists, false otherwise
+    /// - Throws: ShellOut error if command fails
+    func branchExists(at path: String, branch: String) throws -> Bool {
+        do {
+            let output = try shellOut(to: "git rev-parse --verify \(branch)", at: path)
+            return !output.isEmpty
+        } catch {
+            // If the command fails, the branch doesn't exist
+            return false
+        }
+    }
+
+    /// Stashes changes with a specific name for changeset management
+    /// - Parameters:
+    ///   - path: Path to the Git repository
+    ///   - name: Name/identifier for the stash (e.g., "changeset-TICKET-123")
+    /// - Throws: ShellOut error if stash fails
+    func stashWithName(at path: String, name: String) throws {
+        let stashMessage = "alars-changeset: \(name)"
+        try shellOut(to: "git stash push -m \"\(stashMessage)\"", at: path)
+    }
+
+    /// Gets a list of all stash entries with their messages
+    /// - Parameter path: Path to the Git repository
+    /// - Returns: Array of stash entries (format: "stash@{N}: message")
+    /// - Throws: ShellOut error if command fails
+    func getStashList(at path: String) throws -> [String] {
+        let output = try shellOut(to: "git stash list", at: path)
+        if output.isEmpty {
+            return []
+        }
+        return output.components(separatedBy: "\n").filter { !$0.isEmpty }
+    }
+
+    /// Pops a stash entry by its changeset name
+    /// - Parameters:
+    ///   - path: Path to the Git repository
+    ///   - name: Changeset name to look for in stash messages
+    /// - Returns: true if stash was found and popped, false if not found
+    /// - Throws: ShellOut error if pop operation fails
+    func popStashByName(at path: String, name: String) throws -> Bool {
+        let stashList = try getStashList(at: path)
+        let searchString = "alars-changeset: \(name)"
+
+        // Find the stash index that matches our changeset name
+        for (index, stashEntry) in stashList.enumerated() {
+            if stashEntry.contains(searchString) {
+                // Pop the specific stash by index
+                try shellOut(to: "git stash pop stash@{\(index)}", at: path)
+                return true
+            }
+        }
+
+        return false
     }
 }

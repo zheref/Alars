@@ -83,6 +83,20 @@ class MenuView: MenuViewProtocol {
             consoleView.print("Branch: \(currentBranch)".yellow)
         }
 
+        // Display main branch (ensuring it exists)
+        if let mainBranch = try? gitService.getMainBranch(
+            at: project.workingDirectory,
+            configuredDefaultBranch: project.configuration.defaultBranch
+        ) {
+            consoleView.print("Main: \(mainBranch)".cyan)
+        }
+
+        // Display open changesets
+        if let changesets = try? gitService.getOpenChangesets(at: project.workingDirectory), !changesets.isEmpty {
+            let changesetsDisplay = changesets.joined(separator: ", ")
+            consoleView.print("Open Changesets: \(changesetsDisplay)".magenta)
+        }
+
         consoleView.print("═".repeated(40).cyan + "\n")
 
         // Build the menu with standard operations

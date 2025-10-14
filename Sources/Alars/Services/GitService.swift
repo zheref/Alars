@@ -16,6 +16,7 @@ protocol GitServiceProtocol {
     func stashWithName(at path: String, name: String) throws
     func getStashList(at path: String) throws -> [String]
     func popStashByName(at path: String, name: String) throws -> Bool
+    func getOpenChangesets(at path: String) throws -> [String]
 }
 
 /// Service responsible for executing Git operations
@@ -182,5 +183,30 @@ class GitService: GitServiceProtocol {
         }
 
         return false
+    }
+
+    /// Gets a list of all open changeset IDs from branch names
+    /// - Parameter path: Path to the Git repository
+    /// - Returns: Array of changeset IDs (without "changeset/" prefix)
+    /// - Throws: ShellOut error if command fails
+    func getOpenChangesets(at path: String) throws -> [String] {
+        // List all local branches
+        let output = try shellOut(to: "git branch --list 'changeset/*'", at: path)
+        if output.isEmpty {
+            return []
+        }
+
+        // Parse branch names and extract changeset IDs
+        let branches = output.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .map { $0.replacingOccurrences(of: "* ", with: "") } // Remove current branch marker
+            .filter { $0.hasPrefix("changeset/") }
+
+        // Extract just the changeset ID part
+        let changesetIds = branches.map { branch in
+            String(branch.dropFirst("changeset/".count))
+        }
+
+        return changesetIds
     }
 }

@@ -21,11 +21,16 @@ enum MenuOption {
 class MenuView: MenuViewProtocol {
     /// Console view dependency for user interaction
     private let consoleView: ConsoleViewProtocol
+    /// Git service dependency for branch information
+    private let gitService: GitServiceProtocol
 
     /// Initializes the menu view with console dependency
-    /// - Parameter consoleView: Console view for user interaction
-    init(consoleView: ConsoleViewProtocol = ConsoleView()) {
+    /// - Parameters:
+    ///   - consoleView: Console view for user interaction
+    ///   - gitService: Git service for branch information
+    init(consoleView: ConsoleViewProtocol = ConsoleView(), gitService: GitServiceProtocol = GitService()) {
         self.consoleView = consoleView
+        self.gitService = gitService
     }
 
     /// Displays the main application header
@@ -72,6 +77,12 @@ class MenuView: MenuViewProtocol {
         consoleView.print("\n" + "═".repeated(40).cyan)
         consoleView.print("Project: \(project.name)".bold.green)
         consoleView.print("Directory: \(project.workingDirectory)".dim)
+
+        // Display current Git branch
+        if let currentBranch = try? gitService.getCurrentBranch(at: project.workingDirectory) {
+            consoleView.print("Branch: \(currentBranch)".yellow)
+        }
+
         consoleView.print("═".repeated(40).cyan + "\n")
 
         // Build the menu with standard operations

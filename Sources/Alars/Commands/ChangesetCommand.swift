@@ -63,6 +63,7 @@ struct ChangesetCommand: AsyncParsableCommand {
                     consoleView.printSuccess("Changes stashed with name: \(stashName)")
                 }
                 
+                consoleView.printProgress("Checking latest changes on main branch...")
                 // Change to main branch and update to latest changes
                 if let mainBranchName = try gitService.getMainBranch(
                     at: workingDir,
@@ -77,6 +78,8 @@ struct ChangesetCommand: AsyncParsableCommand {
                     // Pull latest changes
                     consoleView.printProgress("Pulling latest changes from main branch...")
                     try gitService.pullLatestChanges(at: workingDir, branch: mainBranchName)
+                } else {
+                    consoleView.printWarning("Unable to determine main branch. Please set it in the project configuration.")
                 }
 
                 // Create the changeset branch
@@ -86,6 +89,7 @@ struct ChangesetCommand: AsyncParsableCommand {
                 if branchExists {
                     consoleView.printWarning("Branch '\(branchName)' already exists. Switching to it...")
                     try gitService.switchToBranch(at: workingDir, branch: branchName)
+                    currentBranch = branchName
                 } else {
                     consoleView.printProgress("Creating new branch: \(branchName)")
                     try gitService.createBranch(at: workingDir, name: branchName, commitChanges: false)

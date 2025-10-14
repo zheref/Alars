@@ -10,6 +10,7 @@ protocol GitServiceProtocol {
     func createBranch(at path: String, name: String, commitChanges: Bool) throws
     func pullLatestChanges(at path: String, branch: String) throws
     func getCurrentBranch(at path: String) throws -> String
+    func getMainBranch(at path: String, configuredDefaultBranch: String?) throws -> String?
     func switchToBranch(at path: String, branch: String) throws
     func branchExists(at path: String, branch: String) throws -> Bool
     func stashWithName(at path: String, name: String) throws
@@ -96,6 +97,22 @@ class GitService: GitServiceProtocol {
     func getCurrentBranch(at path: String) throws -> String {
         let output = try shellOut(to: "git rev-parse --abbrev-ref HEAD", at: path)
         return output.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+    
+    /// Gets the name of the main branch
+    /// - Parameters:
+    ///   - path: Path to the Git repository
+    ///   - configuredDefaultBranch: Name of the configured default branch from the project configuration
+    /// - Returns: Name of the main branch
+    /// - Throws: ShellOut error if command fails
+    func getMainBranch(at path: String, configuredDefaultBranch: String? = nil) throws -> String? {
+        let possibleBranchNames = [configuredDefaultBranch, "develop", "main", "master"]
+        let mainBranchName = possibleBranchNames
+            .compactMap { $0 }
+            .first {
+                try! self.branchExists(at: path, branch: $0)
+            }
+        return mainBranchName
     }
 
     /// Switches to a different branch

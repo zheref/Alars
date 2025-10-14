@@ -50,15 +50,33 @@ struct ChangesetCommand: AsyncParsableCommand {
                 let workingDir = selectedProject.absoluteWorkingDirectory
 
                 consoleView.printInfo("Creating fresh changeset: \(changesetId)")
+                
+                var currentBranch = try gitService.getCurrentBranch(at: workingDir)
 
                 // Check if we have uncommitted changes
                 let isClean = try gitService.isCleanWorkingDirectory(at: workingDir)
                 if !isClean {
                     consoleView.printProgress("Stashing uncommitted changes...")
-                    let currentBranch = try gitService.getCurrentBranch(at: workingDir)
+                    
                     let stashName = currentBranch
                     try gitService.stashWithName(at: workingDir, name: stashName)
                     consoleView.printSuccess("Changes stashed with name: \(stashName)")
+                }
+                
+                // Change to main branch and update to latest changes
+                if let mainBranchName = try gitService.getMainBranch(
+                    at: workingDir,
+                    configuredDefaultBranch: selectedProject.configuration.defaultBranch
+                ) {
+                    // Switch
+                    if mainBranchName != currentBranch {
+                        consoleView.printProgress("Switching to main branch: \(mainBranchName)")
+                        try gitService.switchToBranch(at: workingDir, branch: mainBranchName)
+                    }
+                    
+                    // Pull latest changes
+                    consoleView.printProgress("Pulling latest changes from main branch...")
+                    try gitService.pullLatestChanges(at: workingDir, branch: mainBranchName)
                 }
 
                 // Create the changeset branch

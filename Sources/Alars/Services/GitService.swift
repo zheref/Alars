@@ -88,7 +88,7 @@ class GitService: GitServiceProtocol {
             try switchToBranch(at: path, branch: branch)
         }
         // Pull from origin
-        try shellOut(to: "git pull origin \(branch)", at: path)
+        try shellOut(to: .gitPull(remote: "origin", branch: branch), at: path)
     }
 
     /// Gets the name of the currently checked out branch

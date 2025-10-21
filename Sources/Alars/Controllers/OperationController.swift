@@ -342,6 +342,7 @@ class OperationController: OperationControllerProtocol {
         }
 
         consoleView.printInfo("Creating fresh changeset: \(changesetId)")
+        let currentBranch = try gitService.getCurrentBranch(at: path)
 
         // Check if we have uncommitted changes
         let isClean = try gitService.isCleanWorkingDirectory(at: path)
@@ -352,6 +353,27 @@ class OperationController: OperationControllerProtocol {
             consoleView.printSuccess("Changes stashed with name: \(currentBranch)")
         }
 
+        consoleView.printProgress("Checking latest changes on main branch...")
+        // Change to main branch and update to latest changes
+        if let mainBranchName = try gitService.getMainBranch(
+            at: path,
+            configuredDefaultBranch: project.configuration.defaultBranch
+        ) {
+            // Switch
+            if mainBranchName != currentBranch {
+                consoleView.printProgress("Switching to main branch: \(mainBranchName)")
+                try gitService.switchToBranch(at: path, branch: mainBranchName)
+            }
+            
+            // Pull latest changes
+            consoleView.printProgress("Pulling latest changes from main branch (\(mainBranchName))...")
+            try gitService.pullLatestChanges(at: path, branch: mainBranchName)
+        } else {
+            consoleView.printWarning("Unable to determine main branch. Please set it in the project configuration.")
+        }
+
+        // Create the changeset branch
+        
         // Create the changeset branch
         let branchName = "changeset/\(changesetId)"
         let branchExists = try gitService.branchExists(at: path, branch: branchName)
